@@ -1,0 +1,205 @@
+web server02 (172.21.64.57)
+1-/etc/nginx/blockuseragents.rules
+2-/etc/nginx/conf.d/portaladmin.conf
+  /etc/nginx/conf.d/portal.conf
+now open the portal.conf
+
+upstream portal {
+        hash $cookie_sessionID;
+        server 172.21.64.51:80;
+ #       server 172.21.64.52:80;
+    }
+upstream portalapi {
+        hash $cookie_sessionID;
+       server 172.21.64.51:8085;
+  #     server 172.21.64.52:8085;
+    }
+
+map $sent_http_content_type $expires {
+    default                    off;
+    text/html                  epoch;
+    text/css                   max;
+    application/javascript     max;
+    ~image/                    max;
+}
+include /etc/nginx/blockuseragents.rules;
+server {
+#     listen    80;
+     listen              443 ssl http2;
+     server_name         varanasismartcity.gov.in www.varanasismartcity.gov.in;
+     if ($http_host = www.varanasismartcity.gov.in){
+        rewrite ^/(.*) https://varanasismartcity.gov.in$1 permanent ;
+}
+#     return 301 https://varanasismartcity.gov.in/$request_uri;
+     keepalive_timeout   70;
+################
+gzip on;
+    gzip_comp_level    5;
+    gzip_min_length    256;
+    gzip_proxied       any;
+    gzip_vary          on;
+
+    gzip_types
+    application/atom+xml
+    application/javascript
+    application/json
+    application/ld+json
+    application/manifest+json
+    application/rss+xml
+    application/vnd.geo+json
+    application/vnd.ms-fontobject
+    application/x-font-ttf
+    application/x-web-app-manifest+json
+    application/xhtml+xml
+    application/xml
+    font/opentype
+    image/bmp
+    image/svg+xml
+    image/x-icon
+    text/cache-manifest
+    text/css
+    text/plain
+    text/vcard
+    text/vnd.rim.location.xloc
+    text/vtt
+    text/x-component
+    text/x-cross-domain-policy;
+
+#############
+#        ssl_certificate /etc/nginx/ssl/portal.crt;
+        ssl_certificate /etc/nginx/ssl/portal2march21.crt;
+#        ssl_certificate_key /etc/nginx/ssl/portal.key;
+        ssl_certificate_key /etc/nginx/ssl/portal2march21.key;
+        ssl_protocols TLSv1.2 TLSv1.3;
+#        ssl_prefer_server_ciphers on;
+        ssl_ciphers 'TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384:EECDH+AESGCM:EDH+AESGCM:AES256+EECDH:AES256+EDH:TTLS13-CHACHA20-POLY1305-SHA256:TLS13-AES-128-GCM-SHA256:TLS13-AES-256-GCM-SHA384:ECDHE:!AES128:!SHA1:!SHA256:!SHA384:!COMPLEMENTOFDEFAULT';
+#       ssl_ciphers ECDH+AESGCM:ECDH+CHACHA20:DH+AESGCM:ECDH+AES256:DH+AES256:ECDH+AES128:DH+AES:RSA+AESGCM:RSA+AES:!aNULL:!MD5:!DSS:!AESCCM;
+        ssl_prefer_server_ciphers on;
+#       ssl_dhparam /etc/nginx/ssl/dhparam.pem;
+        ssl_session_timeout 30m;
+        ssl_session_cache shared:SSL:10m;
+        ssl_buffer_size 8k;
+   if ($request_method !~ ^(GET|HEAD|POST)$ )
+        {
+        return 405;
+        }
+
+   if ($blockedagent){
+       return 403;
+    }
+    server_tokens off;
+    add_header X-XSS-Protection "1; mode=block";
+    add_header X-Frame-Options "SAMEORIGIN";
+    add_header Strict-Transport-Security "max-age=31536000; includeSubdomains" always;
+
+    add_header X-Content-Type-Options nosniff;
+
+# root /opt/smartcity/downtime;
+#    index index.html index.html;
+
+location / {
+       proxy_pass http://portal;
+    }
+
+location /api {
+       proxy_pass http://portalapi;
+    }
+
+
+expires $expires;
+}
+
+2-open the second conf file named portaladmin.conf
+
+upstream portaladmin {
+        hash $cookie_sessionID;
+        server 172.21.64.51:8080;
+#        server 172.21.64.52:8080;
+   }
+upstream adminapi {
+        hash $cookie_sessionID;
+       server 172.21.64.51:8085;
+ #     server 172.21.64.52:8085;
+   }
+
+map $sent_http_content_type $expires {
+    default                    off;
+    text/html                  epoch;
+    text/css                   max;
+    application/javascript     max;
+    ~image/                    max;
+}
+include /etc/nginx/blockuseragents.rules;
+server {
+     listen              443 ssl http2;
+     server_name         serviceadmin.varanasismartcity.gov.in;
+     keepalive_timeout   70;
+################
+gzip on;
+    gzip_comp_level    5;
+    gzip_min_length    256;
+    gzip_proxied       any;
+    gzip_vary          on;
+
+    gzip_types
+    application/atom+xml
+    application/javascript
+    application/json
+    application/ld+json
+    application/manifest+json
+    application/rss+xml
+    application/vnd.geo+json
+    application/vnd.ms-fontobject
+    application/x-font-ttf
+    application/x-web-app-manifest+json
+    application/xhtml+xml
+    application/xml
+    font/opentype
+    image/bmp
+    image/svg+xml
+    image/x-icon
+    text/cache-manifest
+    text/css
+    text/plain
+    text/vcard
+    text/vnd.rim.location.xloc
+    text/vtt
+    text/x-component
+    text/x-cross-domain-policy;
+
+#############
+        ssl_certificate /etc/nginx/ssl/portal2march21.crt;
+        ssl_certificate_key /etc/nginx/ssl/portal2march21.key;
+        ssl_protocols TLSv1.2 TLSv1.3;
+        ssl_ciphers 'TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384:EECDH+AESGCM:EDH+AESGCM:AES256+EECDH:AES256+EDH:TTLS13-CHACHA20-POLY1305-SHA256:TLS13-AES-128-GCM-SHA256:TLS13-AES-256-GCM-SHA384:ECDHE:!AES128:!SHA1:!SHA256:!SHA384:!COMPLEMENTOFDEFAULT';
+        ssl_prefer_server_ciphers on;
+        ssl_dhparam /etc/nginx/ssl/dhparam.pem;
+        ssl_session_timeout 30m;
+        ssl_session_cache shared:SSL:10m;
+        ssl_buffer_size 8k;
+   if ($request_method !~ ^(GET|HEAD|POST)$ )
+        {
+        return 405;
+        }
+
+   if ($blockedagent){
+       return 403;
+    }
+    server_tokens off;
+    add_header X-XSS-Protection "1; mode=block";
+    add_header X-Frame-Options "SAMEORIGIN";
+    add_header Strict-Transport-Security "max-age=31536000; includeSubdomains" always;
+    add_header X-Content-Type-Options nosniff;
+
+#root /opt/smartcity/downtime;
+#    index index.html index.html;
+
+location / {
+       proxy_pass http://portaladmin;
+    }
+location /api {
+       proxy_pass http://adminapi;
+    }
+
+expires $expires;
+}
